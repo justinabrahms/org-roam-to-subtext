@@ -2,6 +2,7 @@ use std::env;
 use std::io::{self, Error, Write};
 use std::fs;
 
+use serde_json::to_string_pretty;
 use futures::executor;
 use orgize::{Org, elements::Element, export::ExportHandler,};
 use sqlx::sqlite::SqlitePool;
@@ -15,6 +16,9 @@ struct Args {
     /// File path to the org file to convert
     #[arg(short, long)]
     filename: String,
+
+    #[arg(long)]
+    debug: bool
 }
 
 
@@ -128,6 +132,9 @@ async fn main() -> anyhow::Result<()> {
     ).await?;
 
     let tree = Org::parse(&contents);
+    if args.debug {
+        println!("{}", to_string_pretty(&tree).unwrap());
+    }
     let mut subtext = SubtextExporter::new(pool);
 
     // @@@ Why is the handler mutable?
