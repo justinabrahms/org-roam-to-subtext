@@ -1,6 +1,6 @@
 use std::env;
-use std::io::{self, Error, Write};
-use std::fs;
+use std::io::{Error, Write};
+use std::fs::{self, File};
 
 use serde_json::to_string_pretty;
 use futures::executor;
@@ -16,6 +16,10 @@ struct Args {
     /// File path to the org file to convert
     #[arg(short, long)]
     filename: String,
+
+    /// File path where you want the output written.
+    #[arg(short, long)]
+    output: String,
 
     #[arg(long)]
     debug: bool
@@ -84,6 +88,7 @@ impl ExportHandler<Error> for SubtextExporter {
             Element::Link(link) => {
                 if link.path.starts_with("id:") {
                     let quoted_link_id = String::from(format!(r#""{}""#, &link.path[3..]));
+                    // TODO: output debugging info for the other files we should convert if we want it to all link correctly.
                     // TODO: Memoize this for common links.
                     let title = match executor::block_on(async {
                         sqlx::query!(r#"
@@ -133,6 +138,8 @@ LIMIT 1
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
+    let f = File::create(&args.output).expect(format!("Couldn't create file: {}", &args.output).as_str());
+
     let contents = fs::read_to_string(args.filename)?;
     let pool = SqlitePool::connect(
         &env::var("DATABASE_URL")
@@ -146,7 +153,7 @@ async fn main() -> anyhow::Result<()> {
     let mut subtext = SubtextExporter::new(pool);
 
     // @@@ Why is the handler mutable?
-    tree.write(&mut io::stdout(), &mut subtext).unwrap();
+    tree.write(&f, &mut subtext).unwrap();
 
     Ok(())
 }
