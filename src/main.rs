@@ -1,9 +1,22 @@
 use std::env;
 use std::io::{self, Error, Write};
+use std::fs;
 
 use futures::executor;
 use orgize::{Org, elements::Element, export::ExportHandler,};
 use sqlx::sqlite::SqlitePool;
+
+use clap::Parser;
+
+/// A program to convert org-roam documents into subtext.
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// File path to the org file to convert
+    #[arg(short, long)]
+    filename: String,
+}
+
 
 pub struct SubtextExporter {
     sqlite: SqlitePool,
@@ -26,6 +39,7 @@ fn unquote(s: &str) -> &str {
 }
 
 fn wikify_string(s: &str) -> String {
+    let s = s.replace(&['-', '(', ')', ',', '\"', '.', ';', ':', '\''][..], " ");
     let words: Vec<&str> = s.split_whitespace().collect();
     let mut output = String::new();
     for word in words.iter() {
@@ -105,14 +119,19 @@ LIMIT 1
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
-    let contents = include_str!("../../../../Dropbox/docs/roam/20230609093808-noosphere.org");
-    let pool = SqlitePool::connect(&env::var("DATABASE_URL")?).await?;
+    let args = Args::parse();
 
-    let tree = Org::parse(contents);
+    let contents = fs::read_to_string(args.filename)?;
+    let pool = SqlitePool::connect(
+        &env::var("DATABASE_URL")
+            .expect("You need to specify the DATABASE_URL envvar for your sqlite db. It's probably `sqlite:~/.emacs.d/org-roam.db`")
+    ).await?;
+
+    let tree = Org::parse(&contents);
     let mut subtext = SubtextExporter::new(pool);
-    let mut output = io::stdout();
+
     // @@@ Why is the handler mutable?
-    tree.write(&mut output, &mut subtext).unwrap();
+    tree.write(&mut io::stdout(), &mut subtext).unwrap();
 
     Ok(())
 }
