@@ -126,6 +126,8 @@ LIMIT 1
         match element {
             Element::Section => write!(writer, "\n")?,
             Element::Title { .. } => write!(writer, "\n")?,
+
+            // TODO: Paragraph should also skip the ending tags if it's in the decendents of a drawer
             Element::Paragraph { .. } => write!(writer, "\n")?,
             _ => (),
 
