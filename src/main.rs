@@ -64,7 +64,15 @@ impl SubtextExporter {
 impl ExportHandler<Error> for SubtextExporter {
     fn start<W: Write>(&mut self, mut writer: W, element: &Element) -> Result<(), Error> {
         match element {
-            Element::Text { value } => write!(writer, "{}", value)?,
+            Element::Text { value } => {
+                // @@@ This is a gross hack so I can exclude my drawer
+                // entries. In reality, we should be passing the list of
+                // ancestor elements into this function so we can have context
+                // awareness.
+                if !value.to_lowercase().contains(":id:") {
+                    write!(writer, "{}", value)?
+                }
+            },
             Element::Title(title) => {
                 write!(writer, "{} ", "#".repeat(title.level))?
             },
