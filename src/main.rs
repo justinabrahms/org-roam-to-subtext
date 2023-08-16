@@ -80,6 +80,12 @@ impl ExportHandler<Error> for SubtextExporter {
             Element::Code { value } => {
                 write!(writer, "`{}`", value)?
             },
+            Element::QuoteBlock(_) => {
+                // @@@ Another hack due to not having the ancestry. Quote blocks
+                // contain one or more paragraphs. With this approach, we only
+                // quote the first paragraph.
+                write!(writer, "> ")?
+            },
             Element::Title(title) => {
                 write!(writer, "{} ", "#".repeat(title.level))?
             },
