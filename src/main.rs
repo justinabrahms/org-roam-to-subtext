@@ -30,14 +30,6 @@ pub struct SubtextExporter {
     sqlite: SqlitePool,
 }
 
-fn capitalize(s: &str) -> String {
-    let mut c = s.chars();
-    match c.next() {
-        None => String::new(),
-        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-    }
-}
-
 // DB values somehow come back extra quoted, so provide a utility to strip it
 fn unquote(s: &str) -> &str {
     let mut chars = s.chars();
@@ -46,15 +38,6 @@ fn unquote(s: &str) -> &str {
     chars.as_str()
 }
 
-fn wikify_string(s: &str) -> String {
-    let s = s.replace(&['-', '(', ')', ',', '\"', '.', ';', ':', '\''][..], " ");
-    let words: Vec<&str> = s.split_whitespace().collect();
-    let mut output = String::new();
-    for word in words.iter() {
-        output.push_str(capitalize(word).as_str());
-    }
-    output
-}
 
 impl SubtextExporter {
     fn new(pool: SqlitePool) -> SubtextExporter {
@@ -119,7 +102,7 @@ LIMIT 1
                             String::new()
                         },
                     };
-                    write!(writer, "[[{}]]", wikify_string(unquote(title.as_str())))?;
+                    write!(writer, "[[{}]]", unquote(title.as_str()))?;
 
                 } else {
                 // @@@ Fix roam links.
