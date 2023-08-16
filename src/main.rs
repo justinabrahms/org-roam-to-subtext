@@ -89,6 +89,10 @@ impl ExportHandler<Error> for SubtextExporter {
             Element::Title(title) => {
                 write!(writer, "{} ", "#".repeat(title.level))?
             },
+            Element::ListItem(_item) => {
+                // NOTE: subtext only supports a single item depth on lists
+                write!(writer, "- ")?
+            },
             Element::Keyword(k) => {
                 if k.key == "title" {
                     write!(writer, "# {}\n", k.value)?;
