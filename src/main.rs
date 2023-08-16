@@ -82,6 +82,9 @@ impl ExportHandler<Error> for SubtextExporter {
                 // quote the first paragraph.
                 write!(writer, "> ")?
             },
+            Element::SourceBlock(_) => {
+                write!(writer, "\n(subtext does not yet support code blocks, but this is where one would be)\n\n")?
+            }
             Element::Title(title) => {
                 write!(writer, "{} ", "#".repeat(title.level))?
             },
