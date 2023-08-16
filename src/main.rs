@@ -70,7 +70,6 @@ impl ExportHandler<Error> for SubtextExporter {
                 }) {
                     val = value.replace("\n", "\n> ");
                 }
-                println!("VAL: {}", val);
 
                 write!(writer, "{}", val)?
             },
