@@ -49,16 +49,30 @@ impl SubtextExporter {
 }
 
 impl ExportHandler<Error> for SubtextExporter {
-    fn start<W: Write>(&mut self, mut writer: W, element: &Element) -> Result<(), Error> {
+    fn start<W: Write>(&mut self, mut writer: W, element: &Element, ancestors: Vec<&Element>) -> Result<(), Error> {
         match element {
             Element::Text { value } => {
                 // @@@ This is a gross hack so I can exclude my drawer
                 // entries. In reality, we should be passing the list of
                 // ancestor elements into this function so we can have context
                 // awareness.
-                if !value.to_lowercase().contains(":id:") {
-                    write!(writer, "{}", value)?
+                if value.to_lowercase().contains(":id:") {
+                    return Ok(())
                 }
+
+                let mut val = value.clone().into_owned();
+
+                // In quote blocks, we prefix all lines with a >. The QuoteBlock
+                // element adds the first, but this code is responsible for the adding any within the quote text itself.
+                if ancestors.iter().any(|e| match e {
+                    Element::QuoteBlock(_) => true,
+                    _ => false,
+                }) {
+                    val = value.replace("\n", "\n> ");
+                }
+                println!("VAL: {}", val);
+
+                write!(writer, "{}", val)?
             },
             Element::Code { value } => {
                 write!(writer, "`{}`", value)?
@@ -118,10 +132,13 @@ LIMIT 1
         Ok(())
     }
 
-    fn end<W: Write>(&mut self, mut writer: W, element: &Element) -> Result<(), Error> {
+    fn end<W: Write>(&mut self, mut writer: W, element: &Element, _ancestors: Vec<&Element>) -> Result<(), Error> {
         match element {
             Element::Section => write!(writer, "\n")?,
             Element::Title { .. } => write!(writer, "\n")?,
+            Element::QuoteBlock(_) => {
+                write!(writer, "\n")?
+            },
 
             // TODO: Paragraph should also skip the ending tags if it's in the decendents of a drawer
             Element::Paragraph { .. } => write!(writer, "\n")?,
