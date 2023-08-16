@@ -77,6 +77,9 @@ impl ExportHandler<Error> for SubtextExporter {
                     write!(writer, "{}", value)?
                 }
             },
+            Element::Code { value } => {
+                write!(writer, "`{}`", value)?
+            },
             Element::Title(title) => {
                 write!(writer, "{} ", "#".repeat(title.level))?
             },
